@@ -1,13 +1,13 @@
 # app/database.py
 import os
-from sqlalchemy import create_engine, text
-from app import config  # Ensure Key Vault secrets load first
 import logging
+from sqlalchemy import create_engine, text
+from app import config  # Ensure Key Vault secrets are loaded first
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("database")
 
-# Load the DB URL (set by config.py via Key Vault)
+# Load the DATABASE_URL (from Key Vault via config.py)
 DB_URL = os.getenv("DATABASE_URL")
 
 if not DB_URL:
@@ -18,13 +18,14 @@ else:
 # Create SQLAlchemy engine
 try:
     engine = create_engine(DB_URL, pool_pre_ping=True)
+    logger.info("✅ SQLAlchemy engine created successfully.")
 except Exception as e:
     logger.error(f"❌ Failed to create database engine: {e}")
     engine = None
 
 
 def test_connection():
-    """Test MySQL connection"""
+    """Test MySQL database connection"""
     if not engine:
         logger.error("⚠️ Database engine not initialized.")
         return
@@ -34,3 +35,7 @@ def test_connection():
             logger.info(f"✅ Database connection successful: {result.fetchone()}")
     except Exception as e:
         logger.error(f"❌ Database connection failed: {e}")
+
+
+if __name__ == "__main__":
+    test_connection()
