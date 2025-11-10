@@ -1,7 +1,8 @@
-# app/database.py
+# app/db.py
 import os
 import logging
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 from app import config  # Ensure Key Vault secrets are loaded first
 
 logging.basicConfig(level=logging.INFO)
@@ -18,10 +19,28 @@ else:
 # Create SQLAlchemy engine
 try:
     engine = create_engine(DB_URL, pool_pre_ping=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.info("✅ SQLAlchemy engine created successfully.")
 except Exception as e:
     logger.error(f"❌ Failed to create database engine: {e}")
     engine = None
+    SessionLocal = None
+
+
+# Dependency to get DB session per request (used in routes)
+def get_db():
+    """
+    Yields a SQLAlchemy session to be used in FastAPI routes.
+    Automatically closes after request completion.
+    """
+    if not SessionLocal:
+        raise Exception("❌ Database session factory not initialized. Check DB_URL or Key Vault secrets.")
+
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def test_connection():
